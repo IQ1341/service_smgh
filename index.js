@@ -107,30 +107,42 @@ app.post('/webhook', async (req, res) => {
             const deepseekResponse = await axios.post(
               DEEPSEEK_API_URL,
               {
-                model: "openai/gpt-4o",
-                messages: [{ role: "user", content: incomingMsgRaw }]
+                model: "openai/gpt-4o", // Atau model lain sesuai kebutuhan
+                messages: [{ role: "user", content: incomingMsgRaw }],
+                max_tokens: 1000,
               },
               {
                 headers: {
-                  'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-                  'Content-Type': 'application/json'
-                }
+                  Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
               }
             );
-            responseMsg = deepseekResponse.data.choices[0].message.content.trim();
+
+            const aiReply = deepseekResponse.data.choices?.[0]?.message?.content;
+            responseMsg = aiReply?.trim() || 'Maaf, saya tidak dapat memproses pesan Anda.';
+            console.log("AI Reply:", responseMsg);
           } catch (error) {
-            console.error('Error from DeepSeek API:', error.response?.data || error.message);
-            responseMsg = 'Maaf, saya tidak bisa menjawab sekarang. Silakan coba lagi nanti.';
+            if (error.response?.status === 402) {
+              responseMsg = "💸 Maaf, sistem sedang kehabisan kredit. Coba lagi nanti atau hubungi admin.";
+            } else {
+              console.error("❌ Error saat memanggil DeepSeek API:", error.message);
+              responseMsg = "⚠️ Terjadi kesalahan saat memproses pesan Anda.";
+            }
           }
           break;
       }
     }
 
-    await client.messages.create({
-      from: TWILIO_WHATSAPP_NUMBER,
-      to: from,
-      body: responseMsg,
-    });
+    if (responseMsg?.trim()) {
+      await client.messages.create({
+        from: TWILIO_WHATSAPP_NUMBER,
+        to: from,
+        body: responseMsg,
+      });
+    } else {
+      console.log("⚠️ Tidak ada pesan untuk dikirim.");
+    }
 
     res.status(200).send('Message sent');
   } catch (err) {
@@ -138,6 +150,7 @@ app.post('/webhook', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
 
 cron.schedule('* * * * *', async () => {
   const now = new Date();
