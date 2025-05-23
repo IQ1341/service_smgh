@@ -64,42 +64,46 @@ app.post('/webhook', async (req, res) => {
       }
     } else {
       switch (incomingMsg) {
-        case 'menu':
-        case 'help':
-        case 'start':
+        case "menu":
+        case "help":
+        case "start":
           responseMsg = `📋 *Menu Perintah Smart Greenhouse:*\n\n1️⃣ *water on/off* – Nyalakan/matikan pompa air 💧\n2️⃣ *fertilizer on/off* – Nyalakan/matikan pompa pupuk 🌿\n3️⃣ *cooler on/off* – Nyalakan/matikan pendingin ❄️\n4️⃣ *sensor* – Cek data suhu, kelembapan udara, & tanah 🌡️\n5️⃣ *jadwal air/pupuk [waktu...] durasi [menit]* – Jadwal otomatis\n\n💡 Contoh: ketik *water on* untuk menyalakan pompa air.`;
           break;
-        case 'water on':
-          await statusRef.child('water').set(true);
-          responseMsg = '💧 Pompa air dinyalakan!';
+        case "water on":
+          await statusRef.child("water").set(true);
+          responseMsg = "💧 Pompa air dinyalakan!";
           break;
-        case 'water off':
-          await statusRef.child('water').set(false);
-          responseMsg = '⚫ Pompa air dimatikan!';
+        case "water off":
+          await statusRef.child("water").set(false);
+          responseMsg = "⚫ Pompa air dimatikan!";
           break;
-        case 'fertilizer on':
-          await statusRef.child('fertilizer').set(true);
-          responseMsg = '🌿 Pompa pupuk dinyalakan!';
+        case "fertilizer on":
+          await statusRef.child("fertilizer").set(true);
+          responseMsg = "🌿 Pompa pupuk dinyalakan!";
           break;
-        case 'fertilizer off':
-          await statusRef.child('fertilizer').set(false);
-          responseMsg = '⚫ Pompa pupuk dimatikan!';
+        case "fertilizer off":
+          await statusRef.child("fertilizer").set(false);
+          responseMsg = "⚫ Pompa pupuk dimatikan!";
           break;
-        case 'cooler on':
-          await statusRef.child('cooler').set(true);
-          responseMsg = '❄️ Pendingin dinyalakan!';
+        case "cooler on":
+          await statusRef.child("cooler").set(true);
+          responseMsg = "❄️ Pendingin dinyalakan!";
           break;
-        case 'cooler off':
-          await statusRef.child('cooler').set(false);
-          responseMsg = '⚫ Pendingin dimatikan!';
+        case "cooler off":
+          await statusRef.child("cooler").set(false);
+          responseMsg = "⚫ Pendingin dimatikan!";
           break;
-        case 'sensor':
-          const sensorSnapshot = await db.ref('sensor/data').once('value');
+        case "sensor":
+          const sensorSnapshot = await db.ref("sensor/data").once("value");
           const sensor = sensorSnapshot.val();
           if (sensor) {
-            responseMsg = `🌡️ Suhu: ${sensor.temperature?.toFixed(1)} °C\n💧 Kelembapan Udara: ${sensor.humidity?.toFixed(1)} %\n🌱 Kelembapan Tanah: ${sensor.soilMoisture?.toFixed(1)} %`;
+            responseMsg = `🌡️ Suhu: ${sensor.temperature?.toFixed(
+              1
+            )} °C\n💧 Kelembapan Udara: ${sensor.humidity?.toFixed(
+              1
+            )} %\n🌱 Kelembapan Tanah: ${sensor.soilMoisture?.toFixed(1)} %`;
           } else {
-            responseMsg = '⚠️ Data sensor belum tersedia.';
+            responseMsg = "⚠️ Data sensor belum tersedia.";
           }
           break;
         default:
@@ -107,20 +111,26 @@ app.post('/webhook', async (req, res) => {
             const deepseekResponse = await axios.post(
               DEEPSEEK_API_URL,
               {
-                model: "openai/gpt-4o",
-                messages: [{ role: "user", content: incomingMsgRaw }]
+                model: "openai/gpt-4o", // Atau model lain sesuai kebutuhan
+                messages: [{ role: "user", content: incomingMsgRaw }],
+                max_tokens: 1000,
               },
               {
                 headers: {
-                  'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-                  'Content-Type': 'application/json'
-                }
+                  Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
               }
             );
-            responseMsg = deepseekResponse.data.choices[0].message.content.trim();
+            responseMsg =
+              deepseekResponse.data.choices[0].message.content.trim();
           } catch (error) {
-            console.error('Error from DeepSeek API:', error.response?.data || error.message);
-            responseMsg = 'Maaf, saya tidak bisa menjawab sekarang. Silakan coba lagi nanti.';
+            console.error(
+              "Error from DeepSeek API:",
+              error.response?.data || error.message
+            );
+            responseMsg =
+              "Maaf, saya tidak bisa menjawab sekarang. Silakan coba lagi nanti.";
           }
           break;
       }
